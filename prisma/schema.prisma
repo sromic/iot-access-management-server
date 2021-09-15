@@ -1,0 +1,47 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["interactiveTransactions"]
+}
+
+model Operator {
+  id          String               @id @default(uuid())
+  email       String               @unique
+  firstName   String
+  lastName    String
+  phoneNumber String               @unique
+  userName    String               @unique
+  tapChargers TapChangerOperator[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @default(now())
+}
+
+model TapChanger {
+  id           String               @id @default(uuid())
+  serialNumber String               @unique
+  gpsLocation  String
+  operators    TapChangerOperator[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @default(now())
+}
+
+model TapChangerOperator {
+  operator     Operator   @relation(fields: [operatorId], references: [id])
+  operatorId   String // relation scalar field (used in the `@relation` attribute above)
+  tapChanger   TapChanger @relation(fields: [tapChangerId], references: [id])
+  tapChangerId String // relation scalar field (used in the `@relation` attribute above)
+  assignedAt   DateTime   @default(now())
+
+  @@id([operatorId, tapChangerId])
+}
+
+model Company {
+  id        String     @id @default(uuid())
+  name      String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @default(now())
+}

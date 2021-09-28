@@ -1,35 +1,23 @@
-import {
-  PipeTransform,
-  Injectable,
-  ArgumentMetadata,
-  NotFoundException,
-} from '@nestjs/common';
+import { PipeTransform, ArgumentMetadata } from '@nestjs/common';
+
 import { AbstractService } from '../services';
 
 /**
  * Validate if givem query or param id exists in underlying storage
  * and throw @NotFoundException in case it doesn't
  */
-@Injectable()
-export class IdValidationPipe<ID, T> implements PipeTransform<ID, any> {
+export abstract class IdValidationPipe<ID, T, R>
+  implements PipeTransform<ID, R>
+{
   constructor(
-    private readonly service: AbstractService<ID, T>,
-    private readonly idIdentifiers: string[],
+    protected readonly service: AbstractService<ID, T>,
+    protected readonly idIdentifiers: string[],
   ) {}
 
-  async transform(value: ID, metadata: ArgumentMetadata) {
-    if (
-      metadata.type === 'param' ||
-      (metadata.type === 'query' &&
-        this.idIdentifiers?.includes(metadata?.data))
-    ) {
-      const entity = await this.service.getById(value);
-
-      if (!entity) {
-        throw new NotFoundException('Resource not found');
-      }
-    }
-
-    return value;
-  }
+  /**
+   *
+   * @param value
+   * @param metadata
+   */
+  abstract transform(value: ID, metadata: ArgumentMetadata): R;
 }

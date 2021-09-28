@@ -1,13 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
+
 import { Prisma, TapChanger } from '@prisma/client';
 
 import { Maybe } from '../common/types';
-import { AbstractService, PrismaService } from '../common/services';
+import { AbstractService } from '../common/services';
+
+import { TapChangerRepository } from './tap-changer.repository';
+import { isNonNullOrEmpty } from 'src/common/utils';
 
 @Injectable()
 export class TapChangerService extends AbstractService<string, TapChanger> {
-  constructor(protected readonly prismaService: PrismaService) {
-    super();
+  constructor(protected readonly repository: TapChangerRepository) {
+    super(repository);
   }
 
   /**
@@ -16,12 +20,7 @@ export class TapChangerService extends AbstractService<string, TapChanger> {
    * @returns
    */
   async getById(id: string): Promise<Maybe<TapChanger>> {
-    return this.prismaService.tapChanger.findUnique({
-      where: {
-        id,
-      },
-      rejectOnNotFound: false,
-    });
+    return this.repository.getById(id);
   }
 
   /**
@@ -30,47 +29,7 @@ export class TapChangerService extends AbstractService<string, TapChanger> {
    * @returns
    */
   async create(input: Prisma.TapChangerCreateInput): Promise<TapChanger> {
-    const tagChanger = await this.prismaService.tapChanger.create({
-      data: input,
-    });
-    return tagChanger;
-  }
-
-  /**
-   *
-   * @param params
-   * @returns
-   */
-  async addOperator(params: {
-    tapChangerId: string;
-    operatorId: string;
-  }): Promise<TapChanger> {
-    const { tapChangerId, operatorId } = params;
-    const tapChangerWithOperator = await this.prismaService.tapChanger.update({
-      where: {
-        id: tapChangerId,
-      },
-      data: {
-        operators: {
-          connectOrCreate: {
-            where: {
-              operatorId_tapChangerId: {
-                operatorId,
-                tapChangerId,
-              },
-            },
-            create: {
-              operatorId,
-            },
-          },
-        },
-        updatedAt: new Date(),
-      },
-      include: {
-        operators: { include: { operator: true } },
-      },
-    });
-    return tapChangerWithOperator;
+    return this.repository.create(input);
   }
 
   /**
@@ -80,15 +39,10 @@ export class TapChangerService extends AbstractService<string, TapChanger> {
    */
   async update(params: {
     id: string;
+    companyId: string;
     input: Prisma.TapChangerUpdateInput;
   }): Promise<TapChanger> {
-    const { id, input } = params;
-
-    const tapChanger = await this.prismaService.tapChanger.update({
-      where: { id },
-      data: input,
-    });
-    return tapChanger;
+    return this.repository.update(params);
   }
 
   /**
@@ -96,12 +50,7 @@ export class TapChangerService extends AbstractService<string, TapChanger> {
    * @param id
    */
   async delete(id: string): Promise<TapChanger> {
-    const deletedTapChanger = await this.prismaService.tapChanger.delete({
-      where: {
-        id,
-      },
-    });
-    return deletedTapChanger;
+    return this.repository.delete(id);
   }
 
   /**
@@ -116,13 +65,53 @@ export class TapChangerService extends AbstractService<string, TapChanger> {
     where?: Prisma.TapChangerWhereInput;
     orderBy?: Prisma.TapChangerOrderByWithRelationInput;
   }): Promise<TapChanger[]> {
-    const { skip, take, cursor, where, orderBy } = params;
-    return this.prismaService.tapChanger.findMany({
-      skip,
-      take,
-      cursor,
-      where,
-      orderBy,
-    });
+    return this.repository.list(params);
+  }
+
+  /**
+   *
+   * @param params
+   * @returns
+   */
+  async addTapChangersToCompany(params: {
+    companyId: string;
+    tapChangerIds: string[];
+  }): Promise<Prisma.BatchPayload> {
+    return this.repository.addTapChangersToCompany(params);
+  }
+
+  /**
+   *
+   * @param params
+   * @returns
+   */
+  async removeTapChangersFromCompany(params: {
+    companyId: string;
+    tapChangerIds: string[];
+  }): Promise<Prisma.BatchPayload> {
+    return this.repository.removeTapChangersFromCompany(params);
+  }
+
+  /**
+   *
+   * @param params
+   */
+  async belongsToCompany(params: {
+    id: string;
+    companyId: string;
+  }): Promise<boolean> {
+    return this.repository.belongsToCompany(params);
+  }
+
+  /**
+   *
+   * @param params
+   * @returns
+   */
+  async findMany(params: {
+    ids: string[];
+    companyId?: string;
+  }): Promise<TapChanger[]> {
+    return this.repository.findMany(params);
   }
 }

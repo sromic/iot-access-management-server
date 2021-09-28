@@ -1,0 +1,12 @@
+version: '3'
+networks:
+  iiot-ams-service:
+
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: example
+    ports:
+      - '5432:5432'

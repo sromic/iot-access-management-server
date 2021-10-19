@@ -41,7 +41,7 @@ export class AccessTokenService {
     }
 
     const data = {
-      user: '',
+      user: operatorId,
       tak: takId,
       roles: operator.roles,
     };
